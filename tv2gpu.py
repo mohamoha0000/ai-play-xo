@@ -116,7 +116,7 @@ if __name__ == "__main__":
     mohamed = brain([9, 36, 18, 9])
     youssef = brain([9, 36, 18, 9])
 
-    BATCH_SIZE = 100000  # 50 ألف لعبة بالتوازي
+    BATCH_SIZE = 200000  # 50 ألف لعبة بالتوازي
     EPOCHS = 100         # 10 دورات × 50 ألف = 500,000 جولة
     
     print(f"🚀 بدء التدريب لـ {BATCH_SIZE * EPOCHS:,} جولة عبر كارت الشاشة (GPU)...")
@@ -231,3 +231,5 @@ if __name__ == "__main__":
 
 
 #https://chatgpt.com/share/6ac1a005-6bc4-83ea-8a59-1b6fb2ec0273
+
+#https://share.gemini.google/6OFW4ed7lEGl
