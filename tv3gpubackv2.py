@@ -1,6 +1,5 @@
 import cupy as cp
 import time
-import os
 
 # =========================================================
 # 1. دوال التفعيل (بسيطة ومباشرة للمصفوفات)
@@ -153,8 +152,8 @@ def print_board(board):
 # المدخلات 27 (3 قنوات × 9 مربعات)، طبقتان مخفيتان، و 9 مخرجات
 agent = brain([27, 128, 128, 9])
 
-BATCH_SIZE = 10000   # 10 ألف مباراة في نفس اللحظة
-EPOCHS = 500         # 500 دورة تدريبية شاملة
+BATCH_SIZE = 5000   # 10 ألف مباراة في نفس اللحظة
+EPOCHS = 1000         # 600 دورة تدريبية شاملة
 GAMMA = 0.95         # معامل تمرير المكافأة للوراء
 
 print(f"🚀 بدء التدريب الذاتي لـ {BATCH_SIZE * EPOCHS:,} جولة عبر كارت الشاشة (GPU)...")
@@ -162,6 +161,10 @@ start_time = time.time()
 
 # توزيع نسب استكشاف مختلفة لكل مباراة داخل الدفعة ليرى النموذج كل الحالات الممكنة دائماً
 base_epsilons = cp.linspace(0.02, 0.80, BATCH_SIZE)
+
+ # لحفظ جولة واحدة من كل دورة تدريبية
+saved_replays = [] 
+
 
 for epoch in range(EPOCHS):
     boards = cp.zeros((9, BATCH_SIZE), dtype=cp.float32)
@@ -233,6 +236,10 @@ for epoch in range(EPOCHS):
 
             active_games &= ~(wins | draws)
             turn += 1
+
+    # اختيار مباراة عشوائية من الـ 15000 وحفظ تسلسل حركاتها (9 خطوات كحد أقصى)
+    rand_idx = int(cp.random.randint(0, BATCH_SIZE))
+    saved_replays.append(history_actions[:, rand_idx].get())
 
     # --- المرحلة الثانية: الرجوع للوراء من نهاية اللعبة للبداية وحساب المكافآت ---
     all_inputs_list = []
@@ -318,7 +325,17 @@ for i in range(len(agent.W)):
     save_dict[f'b_{i}'] = agent.b[i]
 cp.savez('tictactoe_model.npz', **save_dict)
 print("✅ تم حفظ الأوزان بنجاح في ملف 'tictactoe_model.npz'")
+
+
+import numpy as np
+np.save('training_replays.npy', np.array(saved_replays))
+print("🎬 تم حفظ سجل المباريات للمشاهدة في 'training_replays.npy'")
+
+
+
 exit()
+"""
+test
 # =========================================================
 # 5. تجربة اللعب ضد النموذج (بقرار الشبكة العصبية 100%)
 # =========================================================
@@ -382,3 +399,4 @@ while True:
     again = input("\nهل تريد لعب جولة أخرى لتجربة خطة مختلفة؟ (y/n): ")
     if again.lower() != 'y':
         break
+"""
