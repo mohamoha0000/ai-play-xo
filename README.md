@@ -16,7 +16,8 @@
 
 
 ---
-
+##​🎥 Watch the experiment on YouTube:
+https://youtu.be/zKOmryMbpB4
 ## ✨ أبرز الأفكار الهندسية في الكود
 
 * **بناء رياضي نقي (Zero Frameworks):** كتابة خوارزمية الانتشار الأمامي، والانتشار الخلفي (Backpropagation)، ومحسّن **Adam**، والشبكة المرجعية (Target Network) يدوياً باستخدام الجبر الخطي.
