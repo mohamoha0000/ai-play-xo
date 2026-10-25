@@ -26,9 +26,9 @@ class SelfPlayViewer:
         self.is_playing = False
         self.after_id = None
         
-        # متغيرات وضع "لقطات التطور" (9 جولات مقسمة: 3 غبية، 3 شوكة مزدوجة، 3 تعادل قوي)
+        # متغيرات وضع "لقطات التطور" (18 جولات مقسمة: 6 غبية، 6 شوكة مزدوجة، 6 تعادل قوي)
         self.highlights_mode = False
-        self.highlight_epochs = self.prepare_9_curated_highlights()
+        self.highlight_epochs = self.prepare_18_curated_highlights()
         self.highlight_index = 0
 
         # تحليل النتائج مسبقاً
@@ -52,8 +52,8 @@ class SelfPlayViewer:
         """
         فحص الجولة وتصنيفها:
         - 'stupid': ترك فرصة فوز مباشر ولعب في مكان آخر
-        - 'fork': صنع شوكة مزدوجة (فرصتي فوز في آن واحد دون تهديد مضاد) وحقق الفوز
-        - 'strong_draw': تعادل كامل (9 حركات) بدون أي خطأ في الفوز أو الصد
+        - 'fork': صنع شوكة مزدوجة
+        - 'strong_draw': تعادل كامل (9 حركات) بدون أي خطأ
         """
         board = np.zeros(9, dtype=int)
         missed_win = False
@@ -103,8 +103,8 @@ class SelfPlayViewer:
             return 'strong_draw'
         return 'other'
 
-    def prepare_9_curated_highlights(self):
-        """البحث عن 3 جولات غبية، 3 شوكة مزدوجة، و3 تعادلات قوية، مع ضمان توفرها دائماً"""
+    def prepare_18_curated_highlights(self):
+        """البحث عن 6 جولات غبية، 6 شوكة مزدوجة، و6 تعادلات قوية (المجموع 18)"""
         stupid_list = []
         fork_list = []
         draw_list = []
@@ -118,49 +118,58 @@ class SelfPlayViewer:
             elif g_type == 'strong_draw':
                 draw_list.append(idx)
 
-        # جولات احتياطية مضمونة في حال كان ملف التدريب لا يحتوي على عدد كافٍ من كل نوع
+        # 6 جولات احتياطية مضمونة لكل فئة
         fallback_stupid = [
-            [0, 3, 1, 4, 8, 5, -1, -1, -1], # X يملك (0,1) ويترك المربع 2 الفائز ويلعب 8!
-            [2, 0, 5, 4, 7, 8, -1, -1, -1], # X يملك (2,5) ويترك المربع 8 الفائز ويلعب 7!
-            [0, 2, 3, 5, 4, 8, -1, -1, -1]  # X يملك (0,3) ويترك المربع 6 الفائز ويلعب 4!
+            [0, 3, 1, 4, 8, 5, -1, -1, -1],
+            [2, 0, 5, 4, 7, 8, -1, -1, -1],
+            [0, 2, 3, 5, 4, 8, -1, -1, -1],
+            [1, 4, 2, 5, 0, 6, -1, -1, -1], 
+            [3, 0, 4, 1, 8, 2, -1, -1, -1], 
+            [6, 3, 7, 4, 2, 5, -1, -1, -1]  
         ]
         fallback_fork = [
-            [0, 1, 4, 8, 6, 3, 2, -1, -1],  # شوكة مزدوجة من X عبر المربعات (0, 4, 6) تهدد 2 و 3 معاً
-            [0, 3, 2, 1, 8, 4, 5, -1, -1],  # شوكة مزدوجة من X عبر الزوايا (0, 2, 8) تهدد 4 و 5 معاً
-            [1, 4, 7, 0, 8, 6, 2, 3, -1]   # شوكة مزدوجة من O عبر المربعات (4, 0, 6) تهدد 2 و 3 معاً
+            [0, 1, 4, 8, 6, 3, 2, -1, -1],  
+            [0, 3, 2, 1, 8, 4, 5, -1, -1],  
+            [1, 4, 7, 0, 8, 6, 2, 3, -1],   
+            [2, 1, 4, 0, 8, 5, 6, -1, -1],  
+            [8, 5, 4, 2, 0, 7, 6, -1, -1],  
+            [6, 3, 4, 0, 2, 7, 8, -1, -1]   
         ]
         fallback_draw = [
-            [4, 0, 2, 6, 3, 5, 1, 7, 8],    # تعادل تكتيكي كامل مع صد جميع التهديدات
-            [0, 4, 8, 1, 7, 6, 2, 5, 3],    # دفاع محكم من الطرفين حتى آخر مربع
-            [4, 2, 0, 8, 5, 3, 7, 1, 6]     # مواجهة متوازنة تنتهي بالتعادل العادل
+            [4, 0, 2, 6, 3, 5, 1, 7, 8],    
+            [0, 4, 8, 1, 7, 6, 2, 5, 3],    
+            [4, 2, 0, 8, 5, 3, 7, 1, 6],    
+            [4, 0, 1, 7, 6, 2, 5, 3, 8],
+            [4, 1, 2, 6, 3, 5, 7, 8, 0],
+            [4, 8, 0, 3, 5, 2, 6, 7, 1]
         ]
 
-        # إذا كان عدد الجولات المكتشفة أقل من 3 في أي فئة، ندرج الجولات الاحتياطية في مواضع مناسبة
-        if len(stupid_list) < 3:
-            for i in range(3 - len(stupid_list)):
+        # تعبئة النقص إذا كان أقل من 6
+        if len(stupid_list) < 6:
+            for i in range(6 - len(stupid_list)):
                 target_idx = min(i, self.total_epochs - 1)
-                self.replays[target_idx] = fallback_stupid[i]
+                self.replays[target_idx] = fallback_stupid[i % 6]
                 if target_idx not in stupid_list:
                     stupid_list.append(target_idx)
 
-        if len(fork_list) < 3:
+        if len(fork_list) < 6:
             mid = self.total_epochs // 2
-            for i in range(3 - len(fork_list)):
+            for i in range(6 - len(fork_list)):
                 target_idx = min(mid + i, self.total_epochs - 1)
-                self.replays[target_idx] = fallback_fork[i]
+                self.replays[target_idx] = fallback_fork[i % 6]
                 if target_idx not in fork_list:
                     fork_list.append(target_idx)
 
-        if len(draw_list) < 3:
-            for i in range(3 - len(draw_list)):
-                target_idx = max(0, self.total_epochs - 3 + i)
-                self.replays[target_idx] = fallback_draw[i]
+        if len(draw_list) < 6:
+            for i in range(6 - len(draw_list)):
+                target_idx = max(0, self.total_epochs - 6 + i)
+                self.replays[target_idx] = fallback_draw[i % 6]
                 if target_idx not in draw_list:
                     draw_list.append(target_idx)
 
-        # اختيار 3 جولات من كل مرحلة بالترتيب (المجموع 9 جولات)
-        selected_9 = stupid_list[:3] + fork_list[:3] + draw_list[-3:]
-        return selected_9
+        # اختيار 6 جولات من كل مرحلة بالترتيب (المجموع 18 جولة)
+        selected_18 = stupid_list[:6] + fork_list[:6] + draw_list[-6:]
+        return selected_18
 
     def analyze_all_games(self):
         """تحليل جميع الجولات لمعرفة من فاز في كل جولة لإظهار الإحصائيات"""
@@ -242,8 +251,8 @@ class SelfPlayViewer:
         tk.Button(frame_ctrl, text="⏭ التالي", font=ctrl_font, bg="#3867D6", fg="white",
                   width=10, command=self.next_epoch).grid(row=0, column=2, padx=5)
                   
-        # زر لقطات التطور (9 جولات)
-        self.btn_highlights = tk.Button(frame_ctrl, text="🌟 لقطات تطور الذكاء (9)", font=ctrl_font, bg="#8C7AE6", fg="white",
+        # زر لقطات التطور (18 جولة)
+        self.btn_highlights = tk.Button(frame_ctrl, text="🌟 لقطات تطور الذكاء (18)", font=ctrl_font, bg="#8C7AE6", fg="white",
                                         width=20, command=self.toggle_highlights)
         self.btn_highlights.grid(row=0, column=3, padx=5)
 
@@ -256,12 +265,12 @@ class SelfPlayViewer:
     def get_ai_phase(self, epoch):
         """تحديد عنوان المرحلة حسب وضع اللقطات أو رقم الجولة العادي"""
         if self.highlights_mode:
-            if self.highlight_index < 3:
-                return f"المرحلة 1 ({self.highlight_index + 1}/3): غباء وتفويت الفوز 🤪", "#FF7979"
-            elif self.highlight_index < 6:
-                return f"المرحلة 2 ({self.highlight_index - 2}/3): دهاء الشوكة المزدوجة 🧠", "#F6E58D"
+            if self.highlight_index < 6:
+                return f"المرحلة 1 ({self.highlight_index + 1}/6): غباء وتفويت الفوز 🤪", "#FF7979"
+            elif self.highlight_index < 12:
+                return f"المرحلة 2 ({self.highlight_index - 5}/6): دهاء الشوكة المزدوجة 🧠", "#F6E58D"
             else:
-                return f"المرحلة 3 ({self.highlight_index - 5}/3): احتراف وتعادل حديدي 🤖", "#BADC58"
+                return f"المرحلة 3 ({self.highlight_index - 11}/6): احتراف وتعادل حديدي 🤖", "#BADC58"
 
         progress = epoch / self.total_epochs
         if progress < 0.3:
@@ -291,7 +300,7 @@ class SelfPlayViewer:
         self.lbl_ai_phase.config(text=phase_text, fg=phase_color)
         
         if self.highlights_mode:
-            mode_text = f"🌟 لقطة حاسمة {self.highlight_index + 1} من 9 (الجولة #{epoch_idx + 1}) 🌟"
+            mode_text = f"🌟 لقطة حاسمة {self.highlight_index + 1} من 18 (الجولة #{epoch_idx + 1}) 🌟"
         else:
             mode_text = f"الجولة: {epoch_idx + 1} / {self.total_epochs}"
         self.lbl_epoch.config(text=mode_text)
@@ -307,7 +316,7 @@ class SelfPlayViewer:
     def play_next_step(self):
         moves = self.replays[self.current_epoch]
 
-        # إعادة لون المربعات الفارغة للون الافتراضي (في حال تم تلوين مربع ضائع في الخطوة السابقة)
+        # إعادة لون المربعات الفارغة للون الافتراضي
         for i in range(9):
             if self.board[i] == 0:
                 self.buttons[i].config(bg="#D2DAE2")
@@ -342,7 +351,7 @@ class SelfPlayViewer:
         # 2. التحقق مما إذا كان اللاعب قد فوّت فوزاً مباشراً (المرحلة الغبية)
         if len(my_wins_before) > 0 and move not in my_wins_before:
             for missed_idx in my_wins_before:
-                self.buttons[missed_idx].config(bg="#FBC531") # تلوين المربع الضائع بالأصفر البرتقالي
+                self.buttons[missed_idx].config(bg="#FBC531") 
             self.lbl_status.config(text=f"🤦 خطأ غبي! ({symbol}) ترك مربع الفوز الأصفر ولعب بعيداً!", fg="#FF7979")
             delay = 1100
         else:
@@ -351,7 +360,7 @@ class SelfPlayViewer:
             opp_wins_after = self.get_winning_moves(self.board, -player)
             if len(my_wins_after) >= 2 and len(opp_wins_after) == 0:
                 for fork_idx in my_wins_after:
-                    self.buttons[fork_idx].config(bg="#9C88FF") # تلوين مربعي التهديد المزدوج بالبنفسجي
+                    self.buttons[fork_idx].config(bg="#9C88FF") 
                 self.lbl_status.config(text=f"⚡ شوكة مزدوجة من ({symbol})! تهديد في اتجاهين لا حل له!", fg="#00D8D6")
                 delay = 1200
             elif move in opp_wins_before:
@@ -376,7 +385,7 @@ class SelfPlayViewer:
                 self.start_epoch_replay(self.highlight_epochs[self.highlight_index])
             else:
                 self.toggle_highlights()
-                self.lbl_status.config(text="انتهى عرض مراحل التطور الـ 9 بنجاح 🎬", fg="#00D8D6")
+                self.lbl_status.config(text="انتهى عرض مراحل التطور الـ 18 بنجاح 🎬", fg="#00D8D6")
         else:
             if self.current_epoch + 1 < self.total_epochs:
                 self.start_epoch_replay(self.current_epoch + 1)
@@ -395,7 +404,7 @@ class SelfPlayViewer:
                 self.root.after_cancel(self.after_id)
 
     def toggle_highlights(self):
-        """تفعيل/إلغاء وضع اللقطات الـ 9 الحاسمة"""
+        """تفعيل/إلغاء وضع اللقطات الـ 18 الحاسمة"""
         self.highlights_mode = not self.highlights_mode
         if self.highlights_mode:
             self.btn_highlights.config(bg="#9C88FF", text="⏹ إيقاف اللقطات")
@@ -404,7 +413,7 @@ class SelfPlayViewer:
             self.btn_toggle.config(text="⏸ إيقاف مؤقت", bg="#FFA801")
             self.start_epoch_replay(self.highlight_epochs[0])
         else:
-            self.btn_highlights.config(bg="#8C7AE6", text="🌟 لقطات تطور الذكاء (9)")
+            self.btn_highlights.config(bg="#8C7AE6", text="🌟 لقطات تطور الذكاء (18)")
             self.is_playing = False
             self.btn_toggle.config(text="▶ تشغيل", bg="#4CD137")
 
@@ -423,26 +432,35 @@ class SelfPlayViewer:
             self.start_epoch_replay(target_epoch)
             
     def create_dummy_replays(self, filename):
-        """إنشاء ملف تجريبي يحتوي على الجولات الـ 9 التكتيكية بالإضافة إلى جولات متنوعة"""
+        """إنشاء ملف تجريبي يحتوي على الجولات الـ 18 التكتيكية بالإضافة إلى جولات متنوعة"""
         dummy_data = []
         for _ in range(100):
             moves = np.random.choice(9, 9, replace=False)
             dummy_data.append(moves)
 
-        # زرع جولات المرحلة الأولى (الغباء: ترك مكان الفوز)
+        # زرع 6 جولات المرحلة الأولى (الغباء: ترك مكان الفوز)
         dummy_data[2]  = [0, 3, 1, 4, 8, 5, -1, -1, -1]
-        dummy_data[10] = [2, 0, 5, 4, 7, 8, -1, -1, -1]
-        dummy_data[20] = [0, 2, 3, 5, 4, 8, -1, -1, -1]
+        dummy_data[4]  = [2, 0, 5, 4, 7, 8, -1, -1, -1]
+        dummy_data[6]  = [0, 2, 3, 5, 4, 8, -1, -1, -1]
+        dummy_data[8]  = [1, 4, 2, 5, 0, 6, -1, -1, -1]
+        dummy_data[10] = [3, 0, 4, 1, 8, 2, -1, -1, -1]
+        dummy_data[12] = [6, 3, 7, 4, 2, 5, -1, -1, -1]
 
-        # زرع جولات المرحلة الثانية (الذكاء: الشوكة المزدوجة)
+        # زرع 6 جولات المرحلة الثانية (الذكاء: الشوكة المزدوجة)
         dummy_data[40] = [0, 1, 4, 8, 6, 3, 2, -1, -1]
-        dummy_data[50] = [0, 3, 2, 1, 8, 4, 5, -1, -1]
-        dummy_data[60] = [1, 4, 7, 0, 8, 6, 2, 3, -1]
+        dummy_data[42] = [0, 3, 2, 1, 8, 4, 5, -1, -1]
+        dummy_data[44] = [1, 4, 7, 0, 8, 6, 2, 3, -1]
+        dummy_data[46] = [2, 1, 4, 0, 8, 5, 6, -1, -1]
+        dummy_data[48] = [8, 5, 4, 2, 0, 7, 6, -1, -1]
+        dummy_data[50] = [6, 3, 4, 0, 2, 7, 8, -1, -1]
 
-        # زرع جولات المرحلة الثالثة (الاحتراف: تعادل قوي بدون أخطاء)
+        # زرع 6 جولات المرحلة الثالثة (الاحتراف: تعادل قوي)
         dummy_data[80] = [4, 0, 2, 6, 3, 5, 1, 7, 8]
-        dummy_data[90] = [0, 4, 8, 1, 7, 6, 2, 5, 3]
-        dummy_data[99] = [4, 2, 0, 8, 5, 3, 7, 1, 6]
+        dummy_data[82] = [0, 4, 8, 1, 7, 6, 2, 5, 3]
+        dummy_data[84] = [4, 2, 0, 8, 5, 3, 7, 1, 6]
+        dummy_data[86] = [4, 0, 1, 7, 6, 2, 5, 3, 8]
+        dummy_data[88] = [4, 1, 2, 6, 3, 5, 7, 8, 0]
+        dummy_data[90] = [4, 8, 0, 3, 5, 2, 6, 7, 1]
 
         np.save(filename, np.array(dummy_data))
 
